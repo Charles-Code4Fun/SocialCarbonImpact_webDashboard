@@ -1,0 +1,1081 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Social Carbon Eco Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+--green-900:#14532d;
+--green-800:#166534;
+--green-700:#15803d;
+--green-600:#16a34a;
+--green-500:#22c55e;
+--green-400:#4ade80;
+--green-100:#dcfce7;
+--green-50:#f0fdf4;
+--mint:#ecfdf5;
+--bg:#f5faf6;
+--text:#173024;
+--muted:#668074;
+--border:#dcebe1;
+--white:#fff;
+--shadow:0 8px 25px rgba(20,83,45,.08);
+}
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:Inter,Segoe UI,Arial,sans-serif;
+background:linear-gradient(135deg,#f4faf6 0%,#eef8f1 50%,#f8fcf9 100%);
+color:var(--text);
+}
+header{
+position:relative;
+overflow:hidden;
+padding:34px 5%;
+color:white;
+background:linear-gradient(135deg,#14532d 0%,#166534 45%,#15803d 100%);
+box-shadow:0 5px 20px rgba(20,83,45,.2);
+}
+header:before,header:after{
+content:"";
+position:absolute;
+border-radius:50%;
+background:rgba(255,255,255,.07);
+}
+header:before{width:280px;height:280px;right:5%;top:-150px}
+header:after{width:180px;height:180px;right:25%;bottom:-130px}
+.header-inner{position:relative;z-index:1;max-width:1500px;margin:auto}
+.logo{
+display:flex;
+align-items:center;
+gap:12px;
+font-size:14px;
+font-weight:700;
+letter-spacing:1.5px;
+text-transform:uppercase;
+opacity:.9;
+}
+.logo-icon{
+width:38px;
+height:38px;
+border-radius:12px;
+display:grid;
+place-items:center;
+background:rgba(255,255,255,.15);
+font-size:21px;
+}
+h1{
+margin:12px 0 6px;
+font-size:34px;
+letter-spacing:-.7px;
+}
+header p{
+margin:0;
+font-size:15px;
+opacity:.85;
+}
+nav{
+position:sticky;
+top:0;
+z-index:20;
+display:flex;
+gap:7px;
+padding:10px 5%;
+background:rgba(255,255,255,.94);
+backdrop-filter:blur(12px);
+border-bottom:1px solid var(--border);
+box-shadow:0 2px 12px rgba(20,83,45,.06);
+}
+nav button{
+border:0;
+background:transparent;
+color:#567263;
+font-weight:600;
+padding:11px 18px;
+border-radius:9px;
+cursor:pointer;
+transition:.2s;
+}
+nav button:hover{
+background:var(--green-50);
+color:var(--green-800);
+}
+nav button.active{
+background:var(--green-100);
+color:var(--green-800);
+}
+main{
+max-width:1500px;
+margin:auto;
+padding:28px 5%;
+}
+.tab{display:none}
+.tab.active{display:block}
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+gap:17px;
+}
+.card{
+background:rgba(255,255,255,.96);
+border:1px solid var(--border);
+border-radius:16px;
+padding:20px;
+margin-bottom:18px;
+box-shadow:var(--shadow);
+}
+.kpi-card{
+position:relative;
+overflow:hidden;
+min-height:125px;
+}
+.kpi-card:after{
+content:"";
+position:absolute;
+width:100px;
+height:100px;
+right:-30px;
+bottom:-35px;
+border-radius:50%;
+background:var(--green-50);
+}
+.kpi-label{
+font-size:13px;
+font-weight:600;
+color:var(--muted);
+text-transform:uppercase;
+letter-spacing:.7px;
+}
+.kpi{
+position:relative;
+z-index:2;
+font-size:32px;
+font-weight:750;
+margin-top:12px;
+color:var(--green-800);
+}
+.section-title{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:10px;
+margin-bottom:15px;
+}
+.section-title h2{
+margin:0;
+font-size:20px;
+color:var(--green-900);
+}
+.section-title p{
+margin:0;
+color:var(--muted);
+font-size:13px;
+}
+.controls{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-bottom:15px;
+}
+button,input,select{
+font:inherit;
+}
+input,select{
+padding:10px 12px;
+border:1px solid #cfe1d5;
+border-radius:9px;
+background:white;
+color:var(--text);
+outline:none;
+}
+input:focus,select:focus{
+border-color:var(--green-500);
+box-shadow:0 0 0 3px rgba(34,197,94,.12);
+}
+.action{
+padding:10px 15px;
+border:0;
+border-radius:9px;
+background:var(--green-700);
+color:white;
+font-weight:650;
+cursor:pointer;
+}
+.action:hover{background:var(--green-800)}
+.table{
+overflow:auto;
+max-height:620px;
+border:1px solid var(--border);
+border-radius:10px;
+}
+table{
+border-collapse:collapse;
+width:100%;
+font-size:12px;
+background:white;
+}
+th,td{
+padding:9px 11px;
+border-bottom:1px solid #e8f1eb;
+white-space:nowrap;
+text-align:left;
+}
+th{
+position:sticky;
+top:0;
+z-index:3;
+background:#e8f6ec;
+color:var(--green-900);
+font-weight:700;
+cursor:pointer;
+}
+th:hover{background:#d7efdf}
+tr:hover td{background:#f6fcf8}
+.chart{
+height:430px;
+position:relative;
+}
+.chart-large{height:480px}
+.status{
+padding:12px 15px;
+border-radius:9px;
+font-size:13px;
+margin-bottom:15px;
+}
+.status.loading{
+background:#ecfdf5;
+color:#166534;
+}
+.status.error{
+background:#fff1f2;
+color:#be123c;
+}
+.status.success{
+background:#f0fdf4;
+color:#166534;
+}
+.description{
+line-height:1.7;
+color:#587064;
+font-size:14px;
+}
+.formula{
+background:linear-gradient(135deg,#f0fdf4,#ecfdf5);
+border:1px solid #cdebd6;
+border-radius:12px;
+padding:16px;
+font-family:Georgia,serif;
+font-size:17px;
+text-align:center;
+color:var(--green-900);
+margin:15px 0;
+}
+.potential-grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:15px;
+}
+.potential-box{
+padding:20px;
+border-radius:13px;
+background:var(--green-50);
+border:1px solid #d7efdf;
+}
+.potential-box .label{
+font-size:12px;
+font-weight:700;
+text-transform:uppercase;
+color:var(--muted);
+}
+.potential-box .value{
+font-size:27px;
+font-weight:750;
+color:var(--green-800);
+margin-top:8px;
+}
+.badge{
+display:inline-block;
+padding:5px 9px;
+border-radius:20px;
+background:var(--green-100);
+color:var(--green-800);
+font-size:11px;
+font-weight:700;
+}
+.footer-note{
+font-size:12px;
+color:#769085;
+margin-top:12px;
+}
+.empty{
+padding:40px;
+text-align:center;
+color:var(--muted);
+}
+@media(max-width:800px){
+h1{font-size:26px}
+nav{overflow:auto}
+nav button{white-space:nowrap}
+.potential-grid{grid-template-columns:1fr}
+.chart{height:340px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="header-inner">
+<div class="logo">
+<div class="logo-icon">♻️</div>
+<span>Social Carbon Analytics</span>
+</div>
+<h1>Social Carbon Economic Impact Potential Dashboard</h1>
+<p>LGA-level social, demographic and carbon-related indicators across Census years</p>
+</div>
+</header>
+
+<nav>
+<button class="active" onclick="tab('home',this)">Overview</button>
+<button onclick="tab('data',this)">Data Explorer</button>
+<button onclick="tab('trend',this)">Regional Trends</button>
+<button onclick="tab('pot',this)">Social Carbon Potential Impact</button>
+</nav>
+
+<main>
+
+<section id="home" class="tab active">
+<!-- 
+<div id="status" class="status loading">
+Loading social-carbon dataset from <b>data/</b>...
+</div> -->
+
+<div class="grid">
+
+<div class="card kpi-card">
+<div class="kpi-label">Regions</div>
+<div class="kpi" id="kr">—</div>
+</div>
+
+<div class="card kpi-card">
+<div class="kpi-label">Census Years</div>
+<div class="kpi" id="ky">—</div>
+</div>
+
+<div class="card kpi-card">
+<div class="kpi-label">Indicators</div>
+<div class="kpi" id="km">—</div>
+</div>
+
+<div class="card kpi-card">
+<div class="kpi-label">Observations</div>
+<div class="kpi" id="ko">—</div>
+</div>
+
+</div>
+
+<div class="card">
+<div class="section-title">
+<h2>Scope</h2>
+<span class="badge">Social Carbon Analytics</span>
+</div>
+
+<p class="description">
+This dashboard integrates LGA-level social and carbon-related indicators
+across Census years. The system supports regional filtering, indicator
+exploration, temporal trend analysis and an illustrative social-carbon
+economic potential assessment.
+</p>
+
+<p class="description">
+The investigation is loaded from Jasmin-Charles Lab.
+<!-- the <b>data/</b> directory.  -->
+For more information, please contact: jasmin@jasmin-charles.com
+</p>
+</div>
+
+<div class="card">
+<div class="section-title">
+<h2>Analytical Framework</h2>
+</div>
+
+<div class="grid">
+
+<div>
+<span class="badge">01 · Social Indicators</span>
+<p class="description">
+Demographic, educational, income, employment, household,
+mobility and community indicators.
+</p>
+</div>
+
+<div>
+<span class="badge">02 · Carbon Interface</span>
+<p class="description">
+Indicators are interpreted in relation to carbon vulnerability,
+transition capacity, efficiency and decarbonisation.
+</p>
+</div>
+
+<div>
+<span class="badge">03 · Regional Dynamics</span>
+<p class="description">
+Temporal trends allow changes in social-carbon conditions
+to be examined for individual LGAs.
+</p>
+</div>
+
+<div>
+<span class="badge">04 · Social Carbon Potential</span>
+<p class="description">
+Capacity and vulnerability are combined into an illustrative
+relative social-carbon economic potential score.
+</p>
+</div>
+
+</div>
+</div>
+
+</section>
+
+<section id="data" class="tab">
+
+<div class="card">
+
+<div class="section-title">
+<h2>Data Explorer</h2>
+<p id="rowInfo"></p>
+</div>
+
+<div class="controls">
+
+<input id="q" placeholder="🔍 Search LGA">
+
+<select id="yf">
+<option value="">All years</option>
+</select>
+
+<!-- <button class="action" onclick="csv()">⬇ Export CSV</button> -->
+
+</div>
+
+<div class="table">
+<table id="t"></table>
+</div>
+
+</div>
+
+</section>
+
+<section id="trend" class="tab">
+
+<div class="card">
+
+<div class="section-title">
+<h2>📈 Regional Trends</h2>
+<p>Explore indicator changes over Census years</p>
+</div>
+
+<div class="controls">
+
+<select id="rs"></select>
+
+<select id="ms"></select>
+
+</div>
+
+<div class="chart">
+<canvas id="chart"></canvas>
+</div>
+
+</div>
+
+</section>
+
+<section id="pot" class="tab">
+
+<div class="card">
+
+<div class="section-title">
+<h2>Social-Carbon Economic Potential</h2>
+<span class="badge">Illustrative Scenario</span>
+</div>
+
+<p class="description">
+The following score provides a conceptual mechanism for combining
+social-carbon capacity and vulnerability. It should not be interpreted
+as a verified monetary valuation.
+</p>
+
+<div class="formula">
+Potential = (Capacity − Vulnerability) × Assumed Carbon Price
+</div>
+
+<div class="controls">
+
+<select id="pr"></select>
+
+<select id="cm"></select>
+
+<select id="vm"></select>
+
+<input id="price" type="number" value="50" min="0" step="1" title="Assumed carbon price">
+
+</div>
+
+<div class="potential-grid">
+
+<div class="potential-box">
+<div class="label">Capacity</div>
+<div class="value" id="cv">—</div>
+</div>
+
+<div class="potential-box">
+<div class="label">Vulnerability</div>
+<div class="value" id="vv">—</div>
+</div>
+
+<div class="potential-box">
+<div class="label">Potential Score</div>
+<div class="value" id="pv">—</div>
+</div>
+
+</div>
+
+<p class="footer-note">
+⚠ Because the current dataset does not necessarily contain population,
+verified avoided tCO₂e and a policy-justified carbon price, the result
+should be treated as a relative scenario indicator rather than a
+financial valuation.
+</p>
+
+</div>
+
+<div class="card">
+
+<div class="section-title">
+<h2>Interpretation</h2>
+</div>
+
+<p class="description">
+A higher capacity value represents stronger potential for social,
+institutional or economic participation in a low-carbon transition.
+A higher vulnerability value represents greater exposure to social
+or carbon-transition constraints. The potential score is therefore
+sensitive to the selected capacity and vulnerability indicators.
+</p>
+
+</div>
+
+</section>
+
+</main>
+
+<script>
+
+let D=[];
+let M=[];
+let ch=null;
+let sortState={column:null,asc:true};
+
+const DATA_FILE="./data/SCI_derived_metrics_LGA.csv";
+
+async function loadData(){
+
+try{
+
+const response=await fetch(DATA_FILE);
+
+if(!response.ok)
+throw new Error("Cannot load "+DATA_FILE);
+
+const text=await response.text();
+
+D=parseCSV(text);
+
+if(!D.length)
+throw new Error("The CSV file contains no records.");
+
+M=Object.keys(D[0]).filter(x=>!["LGA_ID","LGA","LGA_NAME","Census_Year","Year"].includes(x));
+
+buildSelectors();
+updateKPI();
+render();
+
+document.getElementById("status").className="status success";
+// document.getElementById("status").innerHTML=
+// "Dataset loaded successfully from <b>"+DATA_FILE+"</b> · "+
+// D.length.toLocaleString()+" observations · "+
+// M.length+" indicators.";
+
+trend();
+pot();
+
+}catch(e){
+
+document.getElementById("status").className="status error";
+document.getElementById("status").innerHTML=
+"⚠ Unable to load dataset: <b>"+e.message+"</b><br>"+
+"Please make sure the CSV file exists at <b>data/social_carbon.csv</b> "+
+"and open the project through a local web server.";
+
+console.error(e);
+
+}
+
+}
+
+
+/* ---------------- CSV parser ---------------- */
+
+function parseCSV(text){
+
+const rows=[];
+let row=[];
+let cell="";
+let quote=false;
+
+for(let i=0;i<text.length;i++){
+
+const c=text[i];
+const n=text[i+1];
+
+if(c==='"' && quote && n==='"'){
+cell+='"';
+i++;
+continue;
+}
+
+if(c==='"'){
+quote=!quote;
+continue;
+}
+
+if(c===',' && !quote){
+row.push(cell);
+cell="";
+continue;
+}
+
+if((c==='\n'||c==='\r') && !quote){
+
+if(c==='\r'&&n==='\n')i++;
+
+row.push(cell);
+if(row.some(x=>x.trim()!==""))rows.push(row);
+
+row=[];
+cell="";
+continue;
+}
+
+cell+=c;
+}
+
+if(cell!==""||row.length){
+row.push(cell);
+rows.push(row);
+}
+
+const headers=rows.shift().map(x=>x.trim());
+
+return rows.map(r=>{
+
+const o={};
+
+headers.forEach((h,i)=>{
+
+let v=(r[i]??"").trim();
+
+if(v===""){
+o[h]="";
+return;
+}
+
+if(h==="Census_Year"||h==="Year"){
+o[h]=+v;
+return;
+}
+
+const num=Number(v);
+
+o[h]=Number.isFinite(num)&&v!==""
+?num
+:v;
+
+});
+
+return o;
+
+});
+
+}
+
+
+/* ---------------- General utilities ---------------- */
+
+function yearKey(r){
+return r.Census_Year??r.Year??"";
+}
+
+function lgaKey(r){
+return r.LGA_ID??r.LGA??r.LGA_NAME??"";
+}
+
+function unique(arr){
+return [...new Set(arr.filter(x=>x!==""))];
+}
+
+function optionHTML(values){
+
+return values
+.map(x=>`<option value="${escapeHTML(x)}">${escapeHTML(x)}</option>`)
+.join("");
+
+}
+
+function escapeHTML(v){
+
+return String(v)
+.replaceAll("&","&amp;")
+.replaceAll("<","&lt;")
+.replaceAll(">","&gt;")
+.replaceAll('"',"&quot;");
+
+}
+
+
+/* ---------------- Selectors ---------------- */
+
+function buildSelectors(){
+
+const years=unique(D.map(yearKey)).sort((a,b)=>a-b);
+const regions=unique(D.map(lgaKey)).sort();
+
+document.getElementById("yf").innerHTML=
+'<option value="">All years</option>'+
+optionHTML(years);
+
+document.getElementById("rs").innerHTML=optionHTML(regions);
+document.getElementById("pr").innerHTML=optionHTML(regions);
+
+const indicators=M.filter(x=>typeof D.find(r=>typeof r[x]==="number")?.[x]==="number");
+
+const selects=["ms","cm","vm"];
+
+selects.forEach(id=>{
+
+document.getElementById(id).innerHTML=optionHTML(indicators);
+
+});
+
+}
+
+
+/* ---------------- KPI ---------------- */
+
+function updateKPI(){
+
+document.getElementById("kr").textContent=
+unique(D.map(lgaKey)).length.toLocaleString();
+
+document.getElementById("ky").textContent=
+unique(D.map(yearKey)).length.toLocaleString();
+
+document.getElementById("km").textContent=
+M.length.toLocaleString();
+
+document.getElementById("ko").textContent=
+D.length.toLocaleString();
+
+}
+
+
+/* ---------------- Data Explorer ---------------- */
+
+function rows(){
+
+const q=document.getElementById("q").value.toLowerCase();
+const y=document.getElementById("yf").value;
+
+return D.filter(r=>
+
+(!q||String(lgaKey(r)).toLowerCase().includes(q))&&
+
+(!y||String(yearKey(r))===y)
+
+);
+
+}
+
+
+function render(){
+
+const R=rows();
+
+const C=["LGA_ID","LGA","LGA_NAME","Census_Year","Year"]
+.filter((x,i,a)=>a.indexOf(x)===i&&D.some(r=>x in r));
+
+const columns=[...C,...M.filter(x=>!C.includes(x))];
+
+let html="<thead><tr>";
+
+columns.forEach(c=>{
+
+html+=`<th onclick="sortTable('${escapeHTML(c)}')">
+${escapeHTML(c.replaceAll("_"," "))}
+${sortState.column===c?(sortState.asc?" ▲":" ▼"):""}
+</th>`;
+
+});
+
+html+="</tr></thead><tbody>";
+
+let data=[...R];
+
+if(sortState.column){
+
+const c=sortState.column;
+
+data.sort((a,b)=>{
+
+const x=a[c];
+const y=b[c];
+
+if(typeof x==="number"&&typeof y==="number")
+return sortState.asc?x-y:y-x;
+
+return sortState.asc?
+String(x).localeCompare(String(y)):
+String(y).localeCompare(String(x));
+
+});
+
+}
+
+data.slice(0,500).forEach(r=>{
+
+html+="<tr>";
+
+columns.forEach(c=>{
+
+let v=r[c];
+
+if(typeof v==="number")
+v=Number.isInteger(v)?v:v.toFixed(6);
+
+html+=`<td>${escapeHTML(v??"")}</td>`;
+
+});
+
+html+="</tr>";
+
+});
+
+html+="</tbody>";
+
+if(!data.length)
+html='<tbody><tr><td class="empty">No records found.</td></tr></tbody>';
+
+document.getElementById("t").innerHTML=html;
+
+// document.getElementById("rowInfo").textContent=
+// `${Math.min(data.length,500).toLocaleString()} of ${data.length.toLocaleString()} records shown`;
+
+}
+
+
+function sortTable(c){
+
+if(sortState.column===c)
+sortState.asc=!sortState.asc;
+else{
+sortState.column=c;
+sortState.asc=true;
+}
+
+render();
+
+}
+
+
+/* ---------------- Trend ---------------- */
+
+function trend(){
+
+if(!D.length)return;
+
+const region=document.getElementById("rs").value;
+const metric=document.getElementById("ms").value;
+
+const data=D
+.filter(x=>String(lgaKey(x))===String(region))
+.sort((a,b)=>yearKey(a)-yearKey(b));
+
+if(ch)ch.destroy();
+
+const ctx=document.getElementById("chart");
+
+ch=new Chart(ctx,{
+type:"line",
+data:{
+labels:data.map(x=>yearKey(x)),
+datasets:[{
+label:metric.replaceAll("_"," "),
+data:data.map(x=>Number(x[metric])||0),
+borderColor:"#15803d",
+backgroundColor:"rgba(34,197,94,.12)",
+pointBackgroundColor:"#166534",
+pointBorderColor:"#fff",
+pointRadius:5,
+pointHoverRadius:7,
+fill:true,
+tension:.35
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+plugins:{
+legend:{
+labels:{color:"#315443"}
+},
+tooltip:{
+backgroundColor:"#14532d"
+}
+},
+scales:{
+x:{
+grid:{color:"#e5f1e8"},
+ticks:{color:"#668074"}
+},
+y:{
+grid:{color:"#e5f1e8"},
+ticks:{color:"#668074"}
+}
+}
+}
+});
+
+}
+
+
+/* ---------------- Economic Potential ---------------- */
+
+function pot(){
+
+if(!D.length)return;
+
+const region=document.getElementById("pr").value;
+const capacity=document.getElementById("cm").value;
+const vulnerability=document.getElementById("vm").value;
+const price=Number(document.getElementById("price").value)||0;
+
+const data=D
+.filter(x=>String(lgaKey(x))===String(region))
+.sort((a,b)=>yearKey(b)-yearKey(a));
+
+const r=data[0]||{};
+
+const x=Number(r[capacity])||0;
+const y=Number(r[vulnerability])||0;
+const p=(x-y)*price;
+
+document.getElementById("cv").textContent=x.toFixed(4);
+document.getElementById("vv").textContent=y.toFixed(4);
+document.getElementById("pv").textContent=p.toFixed(2);
+
+}
+
+
+/* ---------------- CSV export ---------------- */
+
+function csv(){
+
+const R=rows();
+
+if(!R.length)return;
+
+const C=Object.keys(D[0]);
+
+const lines=[
+C.join(","),
+...R.map(r=>
+C.map(c=>JSON.stringify(r[c]??"")).join(",")
+)
+];
+
+const blob=new Blob(
+[lines.join("\n")],
+{type:"text/csv;charset=utf-8"}
+);
+
+const a=document.createElement("a");
+
+a.href=URL.createObjectURL(blob);
+a.download="filtered_social_carbon.csv";
+a.click();
+
+URL.revokeObjectURL(a.href);
+
+}
+
+
+/* ---------------- Tabs ---------------- */
+
+function tab(id,button){
+
+document.querySelectorAll(".tab")
+.forEach(e=>e.classList.remove("active"));
+
+document.getElementById(id).classList.add("active");
+
+document.querySelectorAll("nav button")
+.forEach(e=>e.classList.remove("active"));
+
+if(button)button.classList.add("active");
+
+if(id==="trend")trend();
+if(id==="pot")pot();
+
+}
+
+
+/* ---------------- Events ---------------- */
+
+document.getElementById("q")
+.addEventListener("input",render);
+
+document.getElementById("yf")
+.addEventListener("change",render);
+
+document.getElementById("rs")
+.addEventListener("change",trend);
+
+document.getElementById("ms")
+.addEventListener("change",trend);
+
+document.getElementById("pr")
+.addEventListener("change",pot);
+
+document.getElementById("cm")
+.addEventListener("change",pot);
+
+document.getElementById("vm")
+.addEventListener("change",pot);
+
+document.getElementById("price")
+.addEventListener("input",pot);
+
+
+/* ---------------- Start ---------------- */
+
+loadData();
+
+</script>
+
+</body>
+</html>
