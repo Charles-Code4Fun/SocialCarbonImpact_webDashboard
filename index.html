@@ -581,12 +581,10 @@ let M=[];
 let ch=null;
 let sortState={column:null,asc:true};
 
-const DATA_FILE="./data/SCI_derived_metrics_LGA.csv";
+const DATA_FILE="./Data/SCI_derived_metrics_LGA.csv";
 
 async function loadData(){
-
 try{
-
 const response=await fetch(DATA_FILE);
 
 if(!response.ok)
