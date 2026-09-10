@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Australia LGA Spatial Analysis Metric Panel</title>
+<style>
+:root{--green-900:#14532d;--green-800:#166534;--green-700:#15803d;--green-600:#16a34a;--green-500:#22c55e;--green-100:#dcfce7;--green-50:#f0fdf4;--slate-900:#0f172a;--slate-700:#334155;--slate-600:#475569;--slate-500:#64748b;--slate-300:#cbd5e1;--slate-200:#e2e8f0;--slate-100:#f1f5f9;--white:#fff}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;background:var(--green-50);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#dashboard-layout{display:flex;width:100%;height:100%}
+#matrix-viewport{flex:1.1;padding:22px;display:flex;flex-direction:column;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-right:1px solid #bbf7d0;overflow-y:auto}
+.view-title{font-size:1rem;font-weight:700;color:var(--green-900);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.view-title:before{content:"🌱"}
+#grid-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,130px));gap:12px;justify-content:center;padding:5px}
+.lga-card-node{height:80px;background:var(--white);border:2px solid #bbf7d0;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.15s;user-select:none;box-shadow:0 2px 6px #14532d0d;padding:4px;text-align:center}
+.lga-card-node:hover{border-color:var(--green-500);background:var(--green-50);transform:translateY(-2px)}
+.lga-card-node.active{border-color:var(--green-700);background:var(--green-100);box-shadow:0 0 0 3px #22c55e26}
+.node-id{font-size:.82rem;font-weight:700;color:var(--slate-900);margin-bottom:4px;font-family:monospace;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.node-label{font-size:.68rem;color:var(--green-800);font-weight:600;background:var(--green-100);padding:2px 6px;border-radius:5px}
+#data-sidebar{flex:1.3;display:flex;flex-direction:column;background:var(--white);box-shadow:-4px 0 16px #14532d0a;min-width:0}
+#sidebar-header{padding:22px;background:linear-gradient(135deg,#fff,#f0fdf4);border-bottom:1px solid #dcfce7}
+#sidebar-header h2{margin:0;font-size:1.25rem;font-weight:700;color:var(--slate-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sidebar-header p{margin:6px 0 0;font-size:.82rem;color:var(--slate-500);font-weight:500}
+#metrics-scroll-area{flex:1;overflow-y:auto;padding:18px;background:#f8fafc}
+.dataset-group-card{background:var(--white);border:1px solid var(--slate-200);border-left:4px solid var(--green-500);border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 4px 8px #14532d08}
+.group-card-title{font-size:.88rem;font-weight:700;color:var(--slate-900);padding-bottom:9px;margin-bottom:10px;border-bottom:2px solid var(--green-50);display:flex;justify-content:space-between;gap:10px}
+.data-row-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed var(--slate-200)}
+.data-row-card:last-child{border-bottom:none}
+.metric-title{font-size:.82rem;color:var(--slate-600);font-weight:600;padding-right:10px;line-height:1.4;overflow-wrap:anywhere}
+.metric-badge{font-size:.82rem;font-weight:700;color:var(--slate-900);background:var(--slate-100);padding:3px 8px;border-radius:6px;border:1px solid var(--slate-200);white-space:nowrap}
+#bottom-status{padding:10px 18px;font-size:.78rem;background:var(--white);border-top:1px solid #dcfce7;color:var(--slate-500);font-weight:500}
+.status-error{color:#b91c1c!important;background:#fef2f2!important}
+.status-success{color:var(--green-800)!important;background:var(--green-50)!important}
+.empty-message{color:var(--slate-500);font-size:.88rem;text-align:center;padding:40px 15px}
+@media(max-width:800px){#dashboard-layout{flex-direction:column}#matrix-viewport{flex:none;height:42%;border-right:none;border-bottom:1px solid #bbf7d0}#data-sidebar{height:58%;flex:none}}
+</style>
+</head>
+<body>
+<div id="dashboard-layout">
+<div id="matrix-viewport">
+<div class="view-title">Australia LGA Regional Matrix Viewport</div>
+<div id="grid-container"><div class="empty-message">Loading SCI dataset...</div></div>
+</div>
+<div id="data-sidebar">
+<div id="sidebar-header">
+<h2 id="current-lga-title">Select an LGA Node</h2>
+<p id="current-lga-code">LGA ID: --</p>
+</div>
+<div id="metrics-scroll-area">
+<div id="metrics-injector"><div class="empty-message">Select an LGA from the matrix.</div></div>
+</div>
+<div id="bottom-status">System Pipeline: Initializing...</div>
+</div>
+</div>
+<script>
+"use strict";
+const DATA_FILE="./Data/SCI_derived_metrics_LGA.csv";
+let localDataRegistry={},dataHeaders=[],lgaField="",yearField="",delimiter=",";
+const $=id=>document.getElementById(id);
+const clean=v=>String(v??"").trim();
+const safe=v=>clean(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const normalize=v=>clean(v).toLowerCase().replace(/[\s_-]+/g,"");
+function detectDelimiter(line){const tabs=(line.match(/\t/g)||[]).length,commas=(line.match(/,/g)||[]).length,semis=(line.match(/;/g)||[]).length;return tabs>=commas&&tabs>=semis?"\t":semis>commas?";":","}
+function parseCSV(text){
+ const lines=text.replace(/^\uFEFF/,"").replace(/\r/g,"").split("\n").filter(x=>x.trim());
+ if(!lines.length)throw new Error("CSV file is empty.");
+ delimiter=detectDelimiter(lines[0]);
+ const parseLine=line=>{const out=[];let value="",quoted=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(quoted&&line[i+1]==='"'){value+='"';i++}else quoted=!quoted}else if(c===delimiter&&!quoted){out.push(value.trim());value=""}else value+=c}out.push(value.trim());return out};
+ dataHeaders=parseLine(lines[0]).map(clean);
+ const rows=[];
+ for(let i=1;i<lines.length;i++){const cols=parseLine(lines[i]);if(cols.every(x=>!clean(x)))continue;const row={};dataHeaders.forEach((h,j)=>row[h]=clean(cols[j]));rows.push(row)}
+ return rows;
+}
+function findField(headers,names){
+ const normalized=headers.map(normalize);
+ for(const name of names){const i=normalized.indexOf(normalize(name));if(i>=0)return headers[i]}
+ return "";
+}
+function getLgaId(row){return clean(row[lgaField]||row.LGA_ID||row.LGA_CODE22||row.LGA_CODE||row.LGA||row.LGA_NAME||"Unknown")}
+function getYear(row){return clean(row[yearField]||row.Year||row.Census_Year||row.CensusYear||"Unknown")}
+function renderSpatialGridNodes(){
+ const grid=$("grid-container");grid.innerHTML="";
+ const ids=Object.keys(localDataRegistry);
+ if(!ids.length){grid.innerHTML='<div class="empty-message">No LGA records found.</div>';return}
+ ids.forEach(id=>{
+  const button=document.createElement("div");button.className="lga-card-node";button.dataset.lgaId=id;
+  button.innerHTML=`<div class="node-id" title="${safe(id)}">${safe(id)}</div><div class="node-label">${localDataRegistry[id].length} Records</div>`;
+  button.addEventListener("click",()=>triggerNodeSelection(id));grid.appendChild(button);
+ });
+}
+function triggerNodeSelection(id){
+ document.querySelectorAll(".lga-card-node").forEach(x=>x.classList.toggle("active",x.dataset.lgaId===id));
+ const rows=localDataRegistry[id];if(!rows?.length)return;
+ $("current-lga-code").textContent=`LGA ID: ${id}`;
+ $("current-lga-title").textContent=`Workspace [Entity ${id}]`;
+ const injector=$("metrics-injector");injector.innerHTML="";
+ rows.forEach((row,rowIndex)=>{
+  const card=document.createElement("div");card.className="dataset-group-card";
+  const year=getYear(row);
+  card.innerHTML=`<div class="group-card-title"><span>📅 Record Timeline: ${safe(year)}</span><span style="color:#64748b;font-size:.78rem">Row #${rowIndex+1}</span></div><div class="group-metrics-list"></div>`;
+  const list=card.querySelector(".group-metrics-list");
+  dataHeaders.forEach(header=>{
+   const value=row[header];if(!clean(value))return;
+   const item=document.createElement("div");item.className="data-row-card";
+   item.innerHTML=`<span class="metric-title">${safe(header.replace(/_/g," "))}</span><span class="metric-badge">${safe(value)}</span>`;
+   list.appendChild(item);
+  });
+  injector.appendChild(card);
+ });
+}
+async function loadData(){
+ const status=$("bottom-status");
+ try{
+  status.className="";status.textContent="🌱 Loading SCI dataset...";
+  const url=new URL(DATA_FILE,document.baseURI);
+  console.log("Loading dataset:",url.href);
+  const response=await fetch(url.href,{cache:"no-store"});
+  if(!response.ok)throw new Error(`HTTP ${response.status} ${response.statusText}: ${url.href}`);
+  const text=await response.text();
+  if(!text.trim())throw new Error("CSV file is empty.");
+  const rows=parseCSV(text);
+  if(!rows.length)throw new Error("CSV contains no data rows.");
+  const headers=dataHeaders;
+  lgaField=findField(headers,["LGA_ID","LGA_CODE22","LGA_CODE","LGA","LGA_NAME","LGA name","Region","Area"]);
+  yearField=findField(headers,["Year","Census_Year","CensusYear","Census Year","YEAR"]);
+  if(!lgaField)throw new Error("No LGA identifier column found.");
+  localDataRegistry={};
+  rows.forEach(row=>{const id=getLgaId(row);if(!localDataRegistry[id])localDataRegistry[id]=[];localDataRegistry[id].push(row)});
+  renderSpatialGridNodes();
+  const ids=Object.keys(localDataRegistry);
+  status.className="status-success";
+  status.textContent=`🌱 Dataset loaded · ${rows.length.toLocaleString()} records · ${ids.length.toLocaleString()} LGAs · ${headers.length} columns`;
+  const params=new URLSearchParams(location.search),routeId=params.get("id")||params.get("lga_id");
+  triggerNodeSelection(routeId&&localDataRegistry[routeId]?routeId:ids[0]);
+ }catch(error){
+  console.error("SCI DATA LOAD ERROR:",error);
+  status.className="status-error";
+  status.textContent=`❌ Dataset unavailable: ${error.message}`;
+  $("grid-container").innerHTML=`<div class="empty-message">Unable to load <b>${safe(DATA_FILE)}</b><br>Check the GitHub filename, folder name, and Pages deployment.</div>`;
+  $("metrics-injector").innerHTML='<div class="empty-message">No data available.</div>';
+ }
+}
+loadData();
+</script>
+</body>
+</html>
